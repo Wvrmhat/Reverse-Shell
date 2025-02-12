@@ -52,11 +52,30 @@ SOCKET createClientSocket() {
     return clientSocket;
 }
 
+void receiveMessage(SOCKET clientSocket) {
+    //creating a buffer for temp storage
+    char buffer[512]; // can hold 512 bytes of data from server side code
+    int iResult = recv(clientSocket, buffer, sizeof(buffer), 0);
+
+    if(iResult > 0) {
+        buffer[iResult] = '\0'; // terminates string when reaching end, add 0 because we are working with c style string
+        cout << "Server message: " << buffer << endl;
+    }else if (iResult == 0) {
+        cout << "Connection Closed" << endl;
+    }
+    else {
+        cerr << "Recv failed." << endl;
+    }
+
+}
+
 int main() {
 
     iniWinSocket();
     SOCKET clientSocket = createClientSocket();
     cout << "Connected to the server" << endl;
+    
+    receiveMessage(clientSocket);
    
   
 

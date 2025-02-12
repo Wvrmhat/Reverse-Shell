@@ -106,6 +106,33 @@ void sendMessage(SOCKET clientSocket, const string &message) {
 
 }
 
+// for sending commands to target
+void sendCommand(SOCKET clientSocket, const string &command) {
+    // using client socket for communication, with the command in c style string for older format
+    int iResult = send(clientSocket, command.c_str(), command.length(), 0);
+    if(iResult == SOCKET_ERROR) {
+        cerr << "Send failed." << endl;
+        exit(1);
+    }
+
+}
+
+string receiveResult(SOCKET clientSocket) {
+    // prevents buffer overflow of client
+    char buffer[10000];
+    int iResult = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+    if(iResult > 0) {
+        buffer[iResult] = '\0'; //null terminator to determine end of string
+    }else if(iResult == 0) {
+        return "Connection closed.";
+    }
+    else {
+        cerr << "Recv failed." << endl;
+        exit(1);
+    }
+    
+}
+
 int main() {
     initializeWinSock();
 
