@@ -159,10 +159,6 @@ int main() {
 
     }
    
-
-    // string message = "Connection established";  // message for client side 
-    // sendMessage(clientSocket, message);
-
     return 0;
 }
 

